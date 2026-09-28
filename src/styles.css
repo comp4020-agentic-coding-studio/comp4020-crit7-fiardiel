@@ -98,3 +98,12 @@ button { font: inherit; padding: 0.5rem 1.1rem; border-radius: 0.4rem; border: 0
 .enrolments button:hover { background: var(--danger-tint); border-color: var(--danger); }
 
 .prose { max-width: 44rem; }
+
+/* A permission-code box sits under its course card, joined to it. */
+.course:has(.permit) label { border-bottom-left-radius: 0; border-bottom-right-radius: 0; height: auto; }
+.permit {
+  display: grid; gap: 0.25rem; padding: 0.75rem 1rem;
+  background: var(--anu-gold-tint); border: 2px solid var(--anu-gold); border-top: 0;
+  border-radius: 0 0 0.75rem 0.75rem; font-size: 0.9rem;
+}
+.permit input { font: inherit; padding: 0.4rem 0.6rem; border: 2px solid var(--ink); border-radius: 0.3rem; }

@@ -27,6 +27,11 @@ The decisions that came out of that:
   would take you past four, all or nothing, so you're never left half
   enrolled, and the page tells you why. While you pick, the tray shows how
   many you'll have out of four.
+- **Permission codes.** Some ANU courses need a code from the convenor before
+  you can enrol. COMP4020 is modelled that way: its card asks for the code,
+  the server checks it (the code is never sent to the page), and a missing or
+  wrong code refuses the whole batch with a message saying why. It's the only
+  course set up like this.
 
 What's enforced by tests (`spec/enrolment.test.ts`): enrolling in several
 courses in one request, and those enrolments surviving a reload; no double

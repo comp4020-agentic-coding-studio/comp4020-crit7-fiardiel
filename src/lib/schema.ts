@@ -12,6 +12,9 @@ export const courses = sqliteTable("courses", {
   title: text().notNull(),
   units: int().notNull(),
   description: text().notNull(),
+  // Set only for courses that need the convenor's permission to enrol.
+  // Server-side only: never render it into a page.
+  permissionCode: text("permission_code"),
 });
 
 // One row per course the (single, anonymous) student is enrolled in; the

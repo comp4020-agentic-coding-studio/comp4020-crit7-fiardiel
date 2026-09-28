@@ -122,6 +122,42 @@ describe("four-course load", () => {
   });
 });
 
+describe("permission codes", () => {
+  const enrolWithCode = (code: string | null, ...courses: string[]) => {
+    const body = new URLSearchParams(courses.map((c) => ["code", c]));
+    if (code !== null) body.set("permit_COMP4020", code);
+    return post("/api/enrol", body);
+  };
+
+  it("refuses COMP4020 without a permission code, and the rest of the batch with it", async () => {
+    await enrolWithCode(null, "COMP4020", "COMP1100");
+    expect(await enrolledCodes()).toEqual([]);
+  });
+
+  it("refuses a wrong permission code and says why", async () => {
+    const res = await enrolWithCode("nope", "COMP4020");
+    expect(await enrolledCodes()).toEqual([]);
+    const doc = await page(res.headers.get("location") ?? "/");
+    expect(doc.querySelector("#enrol-error")?.textContent).toMatch(/COMP4020 needs a permission code/);
+  });
+
+  it("enrols COMP4020 with the right permission code", async () => {
+    await enrolWithCode(" abc123 ", "COMP4020", "COMP1100");
+    expect(await enrolledCodes()).toEqual(["COMP1100", "COMP4020"]);
+  });
+
+  it("never puts the permission code in the page", async () => {
+    const html = await (await fetch(baseUrl)).text();
+    expect(html).not.toContain("abc123");
+  });
+
+  it("asks for the code on COMP4020's card only", async () => {
+    const doc = await page();
+    expect(doc.querySelector('.course[data-code="COMP4020"] input[name="permit_COMP4020"]')).not.toBeNull();
+    expect(doc.querySelectorAll('input[name^="permit_"]')).toHaveLength(1);
+  });
+});
+
 describe("picker page", () => {
   it("has a labelled search box", async () => {
     const doc = await page();

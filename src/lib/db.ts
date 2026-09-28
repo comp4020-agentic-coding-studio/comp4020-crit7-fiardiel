@@ -4,7 +4,7 @@ import Database from "better-sqlite3";
 import { asc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { type Course, courses, enrolments } from "./schema";
+import { type Course as CourseRow, courses, enrolments } from "./schema";
 
 // One SQLite file is the app's whole persistent state. In production
 // fly.toml points DATABASE_PATH at the machine's volume (/data), which is
@@ -24,11 +24,17 @@ export const db = drizzle(client);
 // commit the migration it writes to drizzle/.
 migrate(db, { migrationsFolder: "./drizzle" });
 
-export type { Course };
+// What a page may see of a course: everything but the permission code.
+export type Course = Omit<CourseRow, "permissionCode"> & { needsPermission: boolean };
 export type Enrolment = { code: string; title: string; units: number; enrolledAt: string };
 
 export function listCourses(): Course[] {
-  return db.select().from(courses).orderBy(asc(courses.code)).all();
+  return db
+    .select()
+    .from(courses)
+    .orderBy(asc(courses.code))
+    .all()
+    .map(({ permissionCode, ...course }) => ({ ...course, needsPermission: permissionCode !== null }));
 }
 
 export function listEnrolments(): Enrolment[] {
@@ -49,25 +55,35 @@ export function listEnrolments(): Enrolment[] {
 // four courses a semester.
 export const MAX_COURSES = 4;
 
-export type EnrolResult = { ok: true; added: number } | { ok: false; wouldHave: number };
+export type EnrolResult =
+  | { ok: true; added: number }
+  | { ok: false; reason: "over-limit"; wouldHave: number }
+  | { ok: false; reason: "permission"; course: string };
 
 // Enrols in every real course among `codes` in one statement. Codes are
 // normalised, de-duplicated and checked against the catalogue; courses
 // already enrolled are skipped rather than erroring. A batch that would take
-// the student past MAX_COURSES is refused whole, never enrolled in part.
-export function enrol(codes: string[]): EnrolResult {
+// the student past MAX_COURSES, or that includes a course whose permission
+// code in `permits` (keyed by course code) doesn't match, is refused whole,
+// never enrolled in part.
+export function enrol(codes: string[], permits: Record<string, string> = {}): EnrolResult {
   const wanted = [...new Set(codes.map((c) => c.trim().toUpperCase()).filter(Boolean))];
   if (wanted.length === 0) return { ok: true, added: 0 };
   const current = new Set(listEnrolments().map((e) => e.code));
   const fresh = db
-    .select({ code: courses.code })
+    .select({ code: courses.code, permissionCode: courses.permissionCode })
     .from(courses)
     .where(inArray(courses.code, wanted))
     .all()
     .filter(({ code }) => !current.has(code));
   if (fresh.length === 0) return { ok: true, added: 0 };
+  const denied = fresh.find(
+    ({ code, permissionCode }) =>
+      permissionCode !== null && (permits[code] ?? "").trim() !== permissionCode,
+  );
+  if (denied) return { ok: false, reason: "permission", course: denied.code };
   const wouldHave = current.size + fresh.length;
-  if (wouldHave > MAX_COURSES) return { ok: false, wouldHave };
+  if (wouldHave > MAX_COURSES) return { ok: false, reason: "over-limit", wouldHave };
   const added = db
     .insert(enrolments)
     .values(fresh.map(({ code }) => ({ courseCode: code })))

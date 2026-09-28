@@ -8,6 +8,7 @@ const enrolled = listEnrolments();
 const enrolledCodes = new Set(enrolled.map((e) => e.code));
 const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
 const over = Number(Astro.url.searchParams.get("over")) || 0;
+const permitFor = courses.find((c) => c.needsPermission && c.code === Astro.url.searchParams.get("permit"))?.code;
 ---
 
 <!doctype html>
@@ -31,6 +32,12 @@ const over = Number(Astro.url.searchParams.get("over")) || 0;
           so nothing was added. Drop a course or tick fewer.
         </p>
       )}
+      {permitFor && (
+        <p id="enrol-error" class="error" role="alert">
+          {permitFor} needs a permission code from the course convenor, and the one you
+          entered didn't match, so nothing was added. Check the code and try again.
+        </p>
+      )}
 
       <!-- Outside the enrol form on purpose: Enter in a field submits its
            form, and searching must never enrol you. -->
@@ -52,6 +59,17 @@ const over = Number(Astro.url.searchParams.get("over")) || 0;
                   <span class="meta">{c.units} units{done && " · enrolled"}</span>
                   <span class="desc">{c.description}</span>
                 </label>
+                {c.needsPermission && !done && (
+                  <div class="permit">
+                    <label for={`permit-${c.code}`}>Permission code (ask the convenor)</label>
+                    <input
+                      id={`permit-${c.code}`}
+                      name={`permit_${c.code}`}
+                      autocomplete="off"
+                      spellcheck="false"
+                    />
+                  </div>
+                )}
               </li>
             );
           })}
