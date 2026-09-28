@@ -3,9 +3,10 @@ import { enrol } from "../../lib/db";
 
 // The whole point of the app: every ticked course arrives in one request as
 // repeated `code` fields and is enrolled in one go. The 303 re-renders the
-// page from SQLite, so it works with no client-side JavaScript.
+// page from SQLite, so it works with no client-side JavaScript. A refused
+// batch comes back with the count it would have made, so the page can say why.
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
-  enrol(form.getAll("code").map(String));
-  return redirect("/", 303);
+  const result = enrol(form.getAll("code").map(String));
+  return redirect(result.ok ? "/" : `/?over=${result.wouldHave}`, 303);
 };

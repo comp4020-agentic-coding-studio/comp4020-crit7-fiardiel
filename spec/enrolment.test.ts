@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import { describe, expect, inject, it } from "vitest";
+import { beforeEach, describe, expect, inject, it } from "vitest";
 
 // The week's contract: pick many courses, enrol in all of them with one
 // request, and they're still enrolled after a reload. Drives the running app
@@ -17,13 +17,23 @@ const post = (path: string, body: URLSearchParams) =>
 const enrolIn = (...codes: string[]) =>
   post("/api/enrol", new URLSearchParams(codes.map((code) => ["code", code])));
 
+const page = async (path = "/") =>
+  new JSDOM(await (await fetch(new URL(path, baseUrl))).text()).window.document;
+
 async function enrolledCodes(): Promise<string[]> {
-  const html = await (await fetch(baseUrl)).text();
-  const doc = new JSDOM(html).window.document;
+  const doc = await page();
   return [...doc.querySelectorAll("#enrolled [data-code]")].map(
     (el) => el.getAttribute("data-code") ?? "",
   );
 }
+
+// The app enforces ANU's four-course load, and every test shares one
+// database, so each test starts from no enrolments.
+beforeEach(async () => {
+  for (const code of await enrolledCodes()) {
+    await post("/api/drop", new URLSearchParams({ code }));
+  }
+});
 
 describe("enrolment", () => {
   it("enrols in several courses with one request, and they survive a reload", async () => {
@@ -50,10 +60,10 @@ describe("enrolment", () => {
   });
 
   it("an empty submission changes nothing", async () => {
-    const before = await enrolledCodes();
+    await enrolIn("COMP1100");
     const res = await post("/api/enrol", new URLSearchParams());
     expect(res.status).toBe(303);
-    expect(await enrolledCodes()).toEqual(before);
+    expect(await enrolledCodes()).toEqual(["COMP1100"]);
   });
 
   it("ignores codes that aren't real courses", async () => {
@@ -79,10 +89,40 @@ describe("enrolment", () => {
   });
 });
 
-describe("picker page", () => {
-  const page = async () =>
-    new JSDOM(await (await fetch(baseUrl)).text()).window.document;
+describe("four-course load", () => {
+  it("enrols in exactly four courses", async () => {
+    await enrolIn("COMP1100", "COMP1600", "MATH1013", "STAT1003");
+    expect(await enrolledCodes()).toHaveLength(4);
+  });
 
+  it("refuses a fifth course and keeps the four you have", async () => {
+    await enrolIn("COMP1100", "COMP1600", "MATH1013", "STAT1003");
+    const res = await enrolIn("COMP2100");
+    expect(res.status).toBe(303);
+    expect(await enrolledCodes()).toEqual(["COMP1100", "COMP1600", "MATH1013", "STAT1003"]);
+  });
+
+  it("refuses a batch that would go over four as a whole, not in part", async () => {
+    await enrolIn("COMP1100", "COMP1600", "MATH1013");
+    await enrolIn("COMP2100", "COMP2120");
+    expect(await enrolledCodes()).toEqual(["COMP1100", "COMP1600", "MATH1013"]);
+  });
+
+  it("tells you why when it refuses", async () => {
+    await enrolIn("COMP1100", "COMP1600", "MATH1013");
+    const res = await enrolIn("COMP2100", "COMP2120");
+    const doc = await page(res.headers.get("location") ?? "/");
+    expect(doc.querySelector("#enrol-error")?.textContent).toMatch(/5 courses/);
+  });
+
+  it("shows progress towards four courses", async () => {
+    await enrolIn("COMP1100", "COMP1600");
+    const doc = await page();
+    expect(doc.querySelector("#load")?.textContent).toMatch(/2 of 4 courses/);
+  });
+});
+
+describe("picker page", () => {
   it("has a labelled search box", async () => {
     const doc = await page();
     const search = doc.querySelector<HTMLInputElement>("input#search");
@@ -106,9 +146,8 @@ describe("picker page", () => {
     expect(box?.disabled).toBe(true);
   });
 
-  it("warns, without blocking, when enrolled above 24 units", async () => {
-    await enrolIn("COMP3310", "COMP3425", "COMP3620", "COMP3670", "COMP4020");
+  it("marks the current page in the navbar", async () => {
     const doc = await page();
-    expect(doc.querySelector("#load-warning")?.textContent).toMatch(/24 units/);
+    expect(doc.querySelector('nav a[aria-current="page"]')?.getAttribute("href")).toBe("/");
   });
 });

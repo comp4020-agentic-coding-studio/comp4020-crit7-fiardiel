@@ -1,21 +1,59 @@
-body {
-  margin: 0;
-  padding: 1.5rem 1rem 6rem;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
-  color: #1a1a1a;
-  background: #f6f5f2;
+/* ANU-style palette: black and gold, with a warm off-white page. Gold is
+   used as a fill behind black text, never as small text on white, where
+   its contrast is too low. */
+:root {
+  --anu-black: #000;
+  --anu-gold: #be830e;
+  --anu-gold-tint: #f6eddb;
+  --ink: #1a1a1a;
+  --muted: #555;
+  --paper: #faf8f4;
+  --line: #ddd6c8;
+  --danger-tint: #fbe4e1;
+  --danger: #a3281b;
 }
 
-nav { max-width: 72rem; margin: 0 auto 1rem; display: flex; gap: 1rem; }
-main { max-width: 72rem; margin: 0 auto; }
-a { color: #0b5fff; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+main { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1rem 6rem; }
+a { color: var(--ink); text-decoration-color: var(--anu-gold); text-decoration-thickness: 2px; }
 [hidden] { display: none !important; }
+h1 { margin-bottom: 0.25rem; }
+
+/* Header */
+.site-header { background: var(--anu-black); border-bottom: 4px solid var(--anu-gold); }
+.site-header nav {
+  max-width: 72rem; margin: 0 auto; padding: 0.75rem 1rem;
+  display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; align-items: center; justify-content: space-between;
+}
+.site-header a, .site-header span { color: #fff; text-decoration: none; }
+.wordmark { font-weight: 800; font-size: 1.25rem; letter-spacing: 0.02em; }
+.wordmark span { font-weight: 400; color: var(--anu-gold-tint); }
+.site-header ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.site-header li a, .site-header .soon { display: block; padding: 0.4rem 0.8rem; border-radius: 0.3rem; }
+.site-header li a:hover { background: #222; }
+.site-header li a[aria-current="page"] { background: var(--anu-gold); color: var(--anu-black); font-weight: 700; }
+.site-header .soon { color: #9a9a9a; cursor: not-allowed; }
 
 .lede { font-size: 1.15rem; margin-top: 0; }
 
+.error {
+  padding: 0.75rem 1rem; background: var(--danger-tint); color: var(--danger);
+  border-left: 4px solid var(--danger); font-weight: 600;
+}
+
 .search { display: grid; gap: 0.35rem; margin-block: 1.5rem; }
-.search input { font: inherit; font-size: 1.25rem; padding: 0.75rem 1rem; border: 2px solid #999; border-radius: 0.5rem; }
+.search input {
+  font: inherit; font-size: 1.25rem; padding: 0.75rem 1rem;
+  border: 2px solid var(--ink); border-radius: 0.5rem; background: #fff;
+}
+.search input:focus { outline: 3px solid var(--anu-gold); outline-offset: 2px; }
 
 .courses {
   list-style: none; padding: 0; margin: 0;
@@ -24,30 +62,39 @@ a { color: #0b5fff; }
 }
 .course label {
   display: grid; gap: 0.2rem; height: 100%; box-sizing: border-box;
-  padding: 1rem; background: #fff; border: 2px solid #ddd; border-radius: 0.75rem;
+  padding: 1rem; background: #fff; border: 2px solid var(--line); border-radius: 0.75rem;
   cursor: pointer;
 }
-.course label:has(input:checked) { border-color: #0b5fff; background: #eef3ff; }
-.course label:has(input:disabled) { opacity: 0.6; cursor: default; }
-.course input { width: 1.25rem; height: 1.25rem; margin: 0 0 0.25rem; }
+.course label:hover { border-color: var(--anu-gold); }
+.course label:has(input:checked) { border-color: var(--anu-gold); background: var(--anu-gold-tint); }
+.course label:has(input:disabled) { background: #eee; border-style: dashed; cursor: default; }
+.course input { width: 1.25rem; height: 1.25rem; margin: 0 0 0.25rem; accent-color: var(--anu-gold); }
 .course .code { font-weight: 700; }
-.course .meta, .course .desc { font-size: 0.9rem; color: #555; }
+.course .meta, .course .desc { font-size: 0.9rem; color: var(--muted); }
 
 .tray {
   position: sticky; bottom: 0; margin-top: 1rem;
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;
-  padding: 1rem; background: #1a1a1a; color: #fff; border-radius: 0.75rem;
+  padding: 1rem; background: var(--anu-black); color: #fff; border-radius: 0.75rem;
+  border-top: 4px solid var(--anu-gold);
 }
 .tray p { margin: 0; }
+.tray p.over { color: #ffb4a8; font-weight: 700; }
 
 button { font: inherit; padding: 0.5rem 1.1rem; border-radius: 0.4rem; border: 0; cursor: pointer; }
-.tray button { background: #fff; color: #1a1a1a; font-weight: 700; font-size: 1.1rem; }
+.tray button { background: var(--anu-gold); color: var(--anu-black); font-weight: 800; font-size: 1.1rem; }
+.tray button:hover { background: #d99a1f; }
 
 #enrolled { margin-top: 2.5rem; }
+.load { font-weight: 600; }
+.load.full { color: #6b4a07; }
 .enrolments { list-style: none; padding: 0; display: grid; gap: 0.5rem; }
 .enrolments li {
   display: flex; gap: 1rem; align-items: center; justify-content: space-between;
-  padding: 0.75rem 1rem; background: #fff; border-radius: 0.5rem;
+  padding: 0.75rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 0.5rem;
 }
 .enrolments form { margin: 0; }
-.warn { padding: 0.75rem 1rem; background: #fff4d6; border-left: 4px solid #d99a00; }
+.enrolments button { background: #fff; border: 2px solid var(--ink); }
+.enrolments button:hover { background: var(--danger-tint); border-color: var(--danger); }
+
+.prose { max-width: 44rem; }

@@ -16,3 +16,5 @@ course site (crit 7, "Build the ANU system you wish existed").
 - Every page route goes in `spec/routes.ts`.
 - Enrolling must keep working with JavaScript turned off. The script on the
   page is only for search and the tray counter.
+- The four-course limit is enforced on the server. The page can warn early,
+  but never rely on the page to enforce it.

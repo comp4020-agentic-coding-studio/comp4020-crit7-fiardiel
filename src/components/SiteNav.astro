@@ -1,0 +1,22 @@
+---
+// The site header, styled on ANU's black-and-gold palette (no ANU marks).
+// Timetable and Grades show where this slice would sit in a fuller student
+// portal; they're outside the slice, so they aren't links.
+interface Props {
+  current: "/" | "/readme/";
+}
+const { current } = Astro.props;
+const here = (href: string) => (current === href ? "page" : undefined);
+---
+
+<header class="site-header">
+  <nav aria-label="site">
+    <a class="wordmark" href="/">ANU <span>Course Picker</span></a>
+    <ul>
+      <li><a href="/" aria-current={here("/")}>Courses</a></li>
+      <li><span class="soon" title="Not part of this prototype">Timetable</span></li>
+      <li><span class="soon" title="Not part of this prototype">Grades</span></li>
+      <li><a href="/readme/" aria-current={here("/readme/")}>About</a></li>
+    </ul>
+  </nav>
+</header>

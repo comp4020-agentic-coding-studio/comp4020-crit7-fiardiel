@@ -2,6 +2,7 @@
 // README.md, rendered: what this app is and what good looks like here,
 // published with the app. spec/readme.test.ts checks the whole of it is here.
 import * as readme from "../../README.md";
+import SiteNav from "../components/SiteNav.astro";
 import "../styles.css";
 
 const title = readme.getHeadings().find((h) => h.depth === 1)?.text ?? "README";
@@ -19,10 +20,7 @@ const html = (await readme.compiledContent()).replace(/(src|href)="public\//g, '
     <title>{title}</title>
   </head>
   <body>
-    <nav aria-label="site">
-      <a href="/">Courses</a>
-      <a href="/readme/">About</a>
-    </nav>
-    <main set:html={html} />
+    <SiteNav current="/readme/" />
+    <main class="prose" set:html={html} />
   </body>
 </html>

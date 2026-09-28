@@ -1,12 +1,13 @@
 ---
-import { listCourses, listEnrolments } from "../lib/db";
+import SiteNav from "../components/SiteNav.astro";
+import { listCourses, listEnrolments, MAX_COURSES } from "../lib/db";
 import "../styles.css";
 
-const FULL_LOAD = 24;
 const courses = listCourses();
 const enrolled = listEnrolments();
 const enrolledCodes = new Set(enrolled.map((e) => e.code));
 const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
+const over = Number(Astro.url.searchParams.get("over")) || 0;
 ---
 
 <!doctype html>
@@ -17,13 +18,19 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
     <title>Pick your courses · ANU course picker</title>
   </head>
   <body>
-    <nav aria-label="site">
-      <a href="/">Courses</a>
-      <a href="/readme/">About</a>
-    </nav>
+    <SiteNav current="/" />
     <main>
       <h1>Pick your courses</h1>
-      <p class="lede">Search, tick as many as you like, then enrol in all of them at once.</p>
+      <p class="lede">
+        Search, tick up to {MAX_COURSES} courses, then enrol in all of them at once.
+      </p>
+
+      {over > MAX_COURSES && (
+        <p id="enrol-error" class="error" role="alert">
+          That would make {over} courses. You can enrol in {MAX_COURSES} a semester,
+          so nothing was added. Drop a course or tick fewer.
+        </p>
+      )}
 
       <!-- Outside the enrol form on purpose: Enter in a field submits its
            form, and searching must never enrol you. -->
@@ -32,7 +39,7 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
         <input type="search" id="search" placeholder="e.g. COMP2 or databases" autocomplete="off" />
       </div>
 
-      <form method="post" action="/api/enrol" id="picker">
+      <form method="post" action="/api/enrol" id="picker" data-enrolled={enrolled.length} data-max={MAX_COURSES}>
         <ul class="courses">
           {courses.map((c) => {
             const done = enrolledCodes.has(c.code);
@@ -58,12 +65,11 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
       </form>
 
       <section id="enrolled" aria-labelledby="enrolled-heading">
-        <h2 id="enrolled-heading">My enrolments · {enrolledUnits} units</h2>
-        {enrolledUnits > FULL_LOAD && (
-          <p id="load-warning" class="warn">
-            That's more than a full-time load of {FULL_LOAD} units. You can still enrol, but check it's what you meant.
-          </p>
-        )}
+        <h2 id="enrolled-heading">My enrolments</h2>
+        <p id="load" class:list={["load", { full: enrolled.length === MAX_COURSES }]}>
+          {enrolled.length} of {MAX_COURSES} courses · {enrolledUnits} units
+          {enrolled.length < MAX_COURSES && ` · ${MAX_COURSES - enrolled.length} to go for a full load`}
+        </p>
         {enrolled.length === 0 ? (
           <p>Nothing yet.</p>
         ) : (
@@ -84,12 +90,15 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
     <script>
       // Filtering hides cards instead of re-rendering them, so ticks made
       // before a search survive it. None of this is needed to enrol: the
-      // form posts every ticked box with or without JavaScript.
+      // form posts every ticked box with or without JavaScript, and the
+      // server enforces the four-course limit either way.
       const search = document.querySelector<HTMLInputElement>("#search")!;
       const cards = [...document.querySelectorAll<HTMLElement>(".course")];
       const noMatch = document.querySelector<HTMLElement>("#no-match")!;
       const selected = document.querySelector<HTMLElement>("#selected")!;
       const picker = document.querySelector<HTMLFormElement>("#picker")!;
+      const enrolledCount = Number(picker.dataset.enrolled);
+      const max = Number(picker.dataset.max);
 
       search.addEventListener("input", () => {
         const q = search.value.trim().toLowerCase();
@@ -102,13 +111,20 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
         noMatch.hidden = shown > 0;
       });
 
-      picker.addEventListener("change", () => {
+      function updateTray() {
         const ticked = [...picker.querySelectorAll<HTMLInputElement>('input[name="code"]:checked')];
         const units = ticked.reduce((sum, box) => sum + Number(box.dataset.units), 0);
+        const total = enrolledCount + ticked.length;
+        selected.classList.toggle("over", total > max);
         selected.textContent = ticked.length
-          ? `${ticked.length} selected · ${units} units`
+          ? total > max
+            ? `${ticked.length} selected · that's ${total} courses, the limit is ${max}`
+            : `${ticked.length} selected · ${units} units · you'll have ${total} of ${max}`
           : "Tick courses to add them here.";
-      });
+      }
+      picker.addEventListener("change", updateTray);
+      // Browsers can restore ticks on reload without firing change.
+      updateTray();
     </script>
   </body>
 </html>

@@ -22,21 +22,38 @@ The decisions that came out of that:
   after it.
 - **Room to read.** Each course is a card with its code, title, units and a
   one-line description, in a grid that uses the whole screen.
-- **A load warning that doesn't block you.** Going above 24 units (a
-  full-time load) shows a warning, but you can still enrol.
+- **ANU's four-course load.** A semester is four courses (24 units), and for
+  international students it's exactly four. The server refuses any batch that
+  would take you past four, all or nothing, so you're never left half
+  enrolled, and the page tells you why. While you pick, the tray shows how
+  many you'll have out of four.
 
 What's enforced by tests (`spec/enrolment.test.ts`): enrolling in several
 courses in one request, and those enrolments surviving a reload; no double
-enrolments; dropping a course; ignoring fake course codes; the labelled
-search box; enrolled courses not being pickable again; and the load warning.
+enrolments; dropping a course; ignoring fake course codes; the four-course
+limit, including refusing an over-limit batch as a whole and saying why; the
+labelled search box, and Enter in it never enrolling you; and enrolled courses
+not being pickable again.
 
 What's a judgement call: whether this is actually better than ANUHub, and
 whether the page feels roomy rather than cramped. That's for the crit.
 
 ## What I chose not to build
 
-Logging in, choosing a program and checking its requirements, timetable
-clashes, prerequisites, semesters and class capacity. Each is a real part of
-course selection, but none of them is the add, search, confirm loop this
-prototype is about. There's one anonymous student, and the course list is a
-small set of real ANU courses.
+**Prerequisites.** This was the hardest thing to leave out, because ANU does
+block you from courses you haven't met the prerequisites for. Doing it
+properly needs a record of what you've passed, accurate prerequisite data for
+every course, and rules like "this course or that one". Doing it badly would
+block real students from courses they're allowed into, which is worse than not
+checking at all.
+
+**Underloading.** Taking fewer than four courses (after a summer course, say)
+needs approval in the real system, so the app shows how far you are from four
+but doesn't try to model the approval.
+
+Also out: logging in, choosing a program and checking its requirements,
+timetable clashes, semesters and class capacity. Each is a real part of course
+selection, but none of them is the add, search, confirm loop this prototype is
+about. Timetable and Grades appear in the header only to show where this slice
+would sit; they aren't built. There's one anonymous student, and the course
+list is a small set of real ANU courses.
