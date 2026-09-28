@@ -1,8 +1,10 @@
 ---
-import { listMessages } from "../lib/db";
+import { listCourses, listEnrolments } from "../lib/db";
 import "../styles.css";
 
-const messages = listMessages();
+const courses = listCourses();
+const enrolled = listEnrolments();
+const enrolledCodes = new Set(enrolled.map((e) => e.code));
 ---
 
 <!doctype html>
@@ -10,44 +12,42 @@ const messages = listMessages();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
+    <title>Pick your courses · ANU course picker</title>
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Guestbook</a>
+      <a href="/">Courses</a>
       <a href="/readme/">About</a>
     </nav>
     <main>
-      <h1>Guestbook</h1>
-      <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
-      </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
+      <h1>Pick your courses</h1>
+      <form method="post" action="/api/enrol">
+        <ul>
+          {courses.map((c) => (
+            <li class="course" data-code={c.code}>
+              <label>
+                <input type="checkbox" name="code" value={c.code} disabled={enrolledCodes.has(c.code)} />
+                {c.code} {c.title} ({c.units} units)
+              </label>
+            </li>
+          ))}
+        </ul>
+        <button>Enrol in all</button>
       </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
-      </ul>
+      <section id="enrolled" aria-labelledby="enrolled-heading">
+        <h2 id="enrolled-heading">My enrolments</h2>
+        <ul>
+          {enrolled.map((e) => (
+            <li data-code={e.code}>
+              {e.code} {e.title}
+              <form method="post" action="/api/drop">
+                <input type="hidden" name="code" value={e.code} />
+                <button aria-label={`Drop ${e.code}`}>Drop</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
-    <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
-      const source = new EventSource("/api/events");
-      source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
-      });
-    </script>
   </body>
 </html>

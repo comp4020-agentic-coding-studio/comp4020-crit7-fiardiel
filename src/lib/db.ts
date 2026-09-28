@@ -1,10 +1,10 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
-import { desc } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { type Message, messages } from "./schema";
+import { type Course, courses, enrolments } from "./schema";
 
 // One SQLite file is the app's whole persistent state. In production
 // fly.toml points DATABASE_PATH at the machine's volume (/data), which is
@@ -24,12 +24,48 @@ export const db = drizzle(client);
 // commit the migration it writes to drizzle/.
 migrate(db, { migrationsFolder: "./drizzle" });
 
-export type { Message };
+export type { Course };
+export type Enrolment = { code: string; title: string; units: number; enrolledAt: string };
 
-export function listMessages(): Message[] {
-  return db.select().from(messages).orderBy(desc(messages.id)).limit(50).all();
+export function listCourses(): Course[] {
+  return db.select().from(courses).orderBy(asc(courses.code)).all();
 }
 
-export function addMessage(body: string): Message {
-  return db.insert(messages).values({ body }).returning().get();
+export function listEnrolments(): Enrolment[] {
+  return db
+    .select({
+      code: courses.code,
+      title: courses.title,
+      units: courses.units,
+      enrolledAt: enrolments.createdAt,
+    })
+    .from(enrolments)
+    .innerJoin(courses, eq(enrolments.courseCode, courses.code))
+    .orderBy(asc(courses.code))
+    .all();
+}
+
+// Enrols in every real course among `codes` in one statement. Codes are
+// normalised, de-duplicated and checked against the catalogue; courses
+// already enrolled are skipped rather than erroring.
+export function enrol(codes: string[]): number {
+  const wanted = [...new Set(codes.map((c) => c.trim().toUpperCase()).filter(Boolean))];
+  if (wanted.length === 0) return 0;
+  const known = db
+    .select({ code: courses.code })
+    .from(courses)
+    .where(inArray(courses.code, wanted))
+    .all();
+  if (known.length === 0) return 0;
+  return db
+    .insert(enrolments)
+    .values(known.map(({ code }) => ({ courseCode: code })))
+    .onConflictDoNothing()
+    .run().changes;
+}
+
+export function drop(code: string): void {
+  db.delete(enrolments)
+    .where(eq(enrolments.courseCode, code.trim().toUpperCase()))
+    .run();
 }
