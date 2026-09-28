@@ -1,11 +1,18 @@
-# Your harness
+# Rules for this repo
 
-This file is yours, and it arrives empty on purpose. The rules you hold the
-agent to are part of what gets marked, so they should be rules you decided on.
+This is a course picker: the slice of ANUHub course selection where you pick
+many courses and enrol in them with one confirm. The brief and spec are on the
+course site (crit 7, "Build the ANU system you wish existed").
 
-Nothing about the starter is recorded here. What the repo ships is explained
-where it lives --- `fly.toml`, the `Dockerfile`, the CI workflow and
-`spec/README.md` each say what they fix --- and the
-[course website](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/)
-publishes this deliverable's brief and spec. Read them before you plan or build;
-what the agent needs to carry from any of it is your call.
+- Stay inside the slice. No login, programs, timetable clashes,
+  prerequisites, semesters or capacity unless I ask for them.
+- Schema changes go through `src/lib/schema.ts` and `pnpm db:generate`, and
+  the migration gets committed. Never edit the database by hand.
+- Tests in `spec/` drive the running app over HTTP. Never import from `src/`
+  in a test.
+- Write the failing test first, and watch it fail, before the code that makes
+  it pass.
+- `pnpm check` must be green before every commit.
+- Every page route goes in `spec/routes.ts`.
+- Enrolling must keep working with JavaScript turned off. The script on the
+  page is only for search and the tray counter.
