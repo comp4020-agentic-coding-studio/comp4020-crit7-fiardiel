@@ -25,12 +25,14 @@ const enrolledUnits = enrolled.reduce((sum, e) => sum + e.units, 0);
       <h1>Pick your courses</h1>
       <p class="lede">Search, tick as many as you like, then enrol in all of them at once.</p>
 
-      <form method="post" action="/api/enrol" id="picker">
-        <div class="search">
-          <label for="search">Search by code or title</label>
-          <input type="search" id="search" placeholder="e.g. COMP2 or databases" autocomplete="off" />
-        </div>
+      <!-- Outside the enrol form on purpose: Enter in a field submits its
+           form, and searching must never enrol you. -->
+      <div class="search">
+        <label for="search">Search by code or title</label>
+        <input type="search" id="search" placeholder="e.g. COMP2 or databases" autocomplete="off" />
+      </div>
 
+      <form method="post" action="/api/enrol" id="picker">
         <ul class="courses">
           {courses.map((c) => {
             const done = enrolledCodes.has(c.code);

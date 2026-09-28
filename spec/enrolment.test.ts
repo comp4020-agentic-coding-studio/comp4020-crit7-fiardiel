@@ -90,6 +90,15 @@ describe("picker page", () => {
     expect(doc.querySelector('label[for="search"]')).not.toBeNull();
   });
 
+  it("pressing Enter in the search box can't enrol you", async () => {
+    // Enter in a text field submits its form; the search box must not
+    // belong to the enrol form, or searching enrols whatever is ticked.
+    const doc = await page();
+    const search = doc.querySelector<HTMLInputElement>("input#search");
+    expect(search).not.toBeNull();
+    expect(search?.form).toBeNull();
+  });
+
   it("marks enrolled courses so they can't be picked again", async () => {
     await enrolIn("COMP3900");
     const doc = await page();
