@@ -78,3 +78,28 @@ describe("enrolment", () => {
     expect(res.status).toBe(303);
   });
 });
+
+describe("picker page", () => {
+  const page = async () =>
+    new JSDOM(await (await fetch(baseUrl)).text()).window.document;
+
+  it("has a labelled search box", async () => {
+    const doc = await page();
+    const search = doc.querySelector<HTMLInputElement>("input#search");
+    expect(search?.type).toBe("search");
+    expect(doc.querySelector('label[for="search"]')).not.toBeNull();
+  });
+
+  it("marks enrolled courses so they can't be picked again", async () => {
+    await enrolIn("COMP3900");
+    const doc = await page();
+    const box = doc.querySelector<HTMLInputElement>('.course[data-code="COMP3900"] input');
+    expect(box?.disabled).toBe(true);
+  });
+
+  it("warns, without blocking, when enrolled above 24 units", async () => {
+    await enrolIn("COMP3310", "COMP3425", "COMP3620", "COMP3670", "COMP4020");
+    const doc = await page();
+    expect(doc.querySelector("#load-warning")?.textContent).toMatch(/24 units/);
+  });
+});
